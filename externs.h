@@ -31,6 +31,8 @@
 
 extern intmax_t evalexp PARAMS((char *, int, int *));
 
+extern double fevalexp PARAMS((char *, int, int *));
+
 /* Functions from print_cmd.c. */
 #define FUNC_MULTILINE	0x01
 #define FUNC_EXTERNAL	0x02
@@ -52,6 +54,7 @@ extern void print_case_command_head PARAMS((CASE_COM *));
 #if defined (DPAREN_ARITHMETIC)
 extern void print_arith_command PARAMS((WORD_LIST *));
 #endif
+extern void print_float_command PARAMS((WORD_DESC *));
 #if defined (COND_COMMAND)
 extern void print_cond_command PARAMS((COND_COM *));
 #endif
@@ -74,6 +77,7 @@ extern void xtrace_print_case_command_head PARAMS((CASE_COM *));
 #if defined (DPAREN_ARITHMETIC)
 extern void xtrace_print_arith_cmd PARAMS((WORD_LIST *));
 #endif
+extern void xtrace_print_float_cmd PARAMS((char *));
 #if defined (COND_COMMAND)
 extern void xtrace_print_cond_term PARAMS((int, int, WORD_DESC *, char *, char *));
 #endif

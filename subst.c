@@ -4080,6 +4080,16 @@ expand_arith_string (string, quoted)
   return ret;
 }
 
+char *
+expand_float_string (string, quoted)
+     char *string;
+     int quoted;
+{
+
+  return (char *)NULL; /* TODO */
+
+}
+
 #if defined (COND_COMMAND)
 /* Just remove backslashes in STRING.  Returns a new string. */
 char *

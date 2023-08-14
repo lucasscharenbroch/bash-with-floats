@@ -449,6 +449,27 @@ make_arith_command (exp)
 #endif
 }
 
+COMMAND *
+make_float_command (exp)
+     WORD_DESC *exp;
+{
+  COMMAND *command;
+  FLOAT_COM *fcommand;
+
+  command = (COMMAND *)xmalloc (sizeof (COMMAND));
+  command->value.Float = fcommand = (FLOAT_COM *)xmalloc (sizeof (FLOAT_COM));
+
+  fcommand->flags = 0;
+  fcommand->line = line_number;
+  fcommand->exp = exp;
+
+  command->type = cm_float;
+  command->redirects = (REDIRECT *)NULL;
+  command->flags = 0;
+
+  return (command);
+}
+
 #if defined (COND_COMMAND)
 struct cond_com *
 make_cond_node (type, op, left, right)

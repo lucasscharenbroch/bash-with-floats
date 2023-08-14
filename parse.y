@@ -181,6 +181,7 @@ static int special_case_tokens PARAMS((char *));
 static int read_token PARAMS((int));
 static char *parse_matched_pair PARAMS((int, int, int, int *, int));
 static char *parse_comsub PARAMS((int, int, int, int *, int));
+static char *parse_dolbrace PARAMS((int, int, int, int *, int));
 #if defined (ARRAY_VARS)
 static char *parse_compound_assignment PARAMS((int *));
 #endif
@@ -188,6 +189,7 @@ static char *parse_compound_assignment PARAMS((int *));
 static int parse_dparen PARAMS((int));
 static int parse_arith_cmd PARAMS((char **, int));
 #endif
+static int parse_float_exp PARAMS((void));
 #if defined (COND_COMMAND)
 static void cond_error PARAMS((void));
 static COND_COM *cond_expr PARAMS((void));
@@ -354,7 +356,7 @@ static FILE *yyerrstream;
 %token IN BANG TIME TIMEOPT TIMEIGN
 
 /* More general tokens. yylex () knows how to make these. */
-%token <word> WORD ASSIGNMENT_WORD REDIR_WORD
+%token <word> WORD ASSIGNMENT_WORD REDIR_WORD FLOAT_CMD
 %token <number> NUMBER
 %token <word_list> ARITH_CMD ARITH_FOR_EXPRS
 %token <command> COND_CMD
@@ -373,6 +375,7 @@ static FILE *yyerrstream;
 %type <command> simple_command shell_command
 %type <command> for_command select_command case_command group_command
 %type <command> arith_command
+%type <command> float_command
 %type <command> cond_command
 %type <command> arith_for_command
 %type <command> coproc
@@ -813,6 +816,8 @@ shell_command:	for_command
 			{ $$ = $1; }
 	|	arith_command
 			{ $$ = $1; }
+	|	float_command
+			{ $$ = $1; }
 	|	cond_command
 			{ $$ = $1; }
 	|	arith_for_command
@@ -1072,6 +1077,10 @@ group_command:	'{' compound_list '}'
 
 arith_command:	ARITH_CMD
 			{ $$ = make_arith_command ($1); }
+	;
+
+float_command:	FLOAT_CMD
+			{ $$ = make_float_command ($1); }
 	;
 
 cond_command:	COND_START COND_CMD COND_END
@@ -3588,6 +3597,15 @@ read_token (command)
   if MBTEST(character == '-' && (last_read_token == LESS_AND || last_read_token == GREATER_AND))
     return (character);
 
+  /* Check for {{...}} */
+  if MBTEST(character == '{' && reserved_word_acceptable (last_read_token))
+    {
+	peek_char = shell_getc (0);
+	if MBTEST(peek_char == '{')
+	  return parse_float_exp();
+	shell_ungetc(peek_char);
+    }
+
 tokword:
   /* Okay, if we got this far, we have to read a word.  Read one,
      and then check it against the known ones. */
@@ -3613,6 +3631,7 @@ tokword:
 #define P_ARRAYSUB	0x0020	/* parsing a [...] array subscript for assignment */
 #define P_DOLBRACE	0x0040	/* parsing a ${...} construct */
 #define P_ARITH		0x0080	/* parsing a $(( )) arithmetic expansion */
+#define P_FLOAT		0x0100	/* parsing a ${{ }} floating-point expansion */
 
 /* Lexical state while parsing a grouping construct or $(...). */
 #define LEX_WASDOL	0x0001
@@ -3909,7 +3928,7 @@ parse_matched_pair (qc, open, close, lenp, flags)
 	      APPEND_NESTRET ();
 	      FREE (nestret);
 	    }
-	  else if ((flags & (P_ARRAYSUB|P_DOLBRACE)) && (tflags & LEX_WASDOL) && (ch == '(' || ch == '{' || ch == '['))	/* ) } ] */
+	  else if ((flags & (P_ARRAYSUB|P_DOLBRACE|P_FLOAT)) && (tflags & LEX_WASDOL) && (ch == '(' || ch == '{' || ch == '['))	/* ) } ] */
 	    goto parse_dollar_word;
 	  else if ((flags & P_ARITH) && (tflags & LEX_WASDOL) && ch == '(') /*)*/
 	    /* $() inside $(( ))/$[ ] */
@@ -3942,7 +3961,7 @@ parse_dollar_word:
 	  if (ch == '(')		/* ) */
 	    nestret = parse_comsub (0, '(', ')', &nestlen, (rflags|P_COMMAND) & ~P_DQUOTE);
 	  else if (ch == '{')		/* } */
-	    nestret = parse_matched_pair (0, '{', '}', &nestlen, P_FIRSTCLOSE|P_DOLBRACE|rflags);
+	    nestret = parse_dolbrace (0, '{', '}', &nestlen, rflags);
 	  else if (ch == '[')		/* ] */
 	    nestret = parse_matched_pair (0, '[', ']', &nestlen, rflags|P_ARITH);
 
@@ -4221,6 +4240,56 @@ INTERNAL_DEBUG(("current_token (%d) != shell_eof_token (%c)", current_token, she
 
 /*itrace("parse_comsub:%d: returning `%s'", line_number, ret);*/
   return ret;
+}
+
+/* We've seen `${'. Parse either ${{...}} or ${...}.
+*/
+char *
+parse_dolbrace (qc, open, close, lenp, flags)
+     int qc, open, close, flags;
+     int *lenp;
+{
+  int peek_char = shell_getc (0);
+
+  if MBTEST(peek_char == '{')
+    {
+      int ttoklen;
+      char *ttok = parse_matched_pair (0, '{', '}', &ttoklen, flags|P_FLOAT);
+
+      if (ttok == &matched_pair_error)
+	return &matched_pair_error;
+
+      peek_char = shell_getc (0);
+      if MBTEST(peek_char != '}')
+	{
+	  parser_error (line_number, _("expected `}}' to close {{...}} construct"));
+	  FREE (ttok);
+	  return &matched_pair_error;
+	}
+
+      int retsize, retind = 0;
+      char *ret = (char *)xmalloc (retsize = 64);
+
+      /*      "${{...}}"
+	 ret:   "{...}}"
+	 ttok:   "...}"
+
+	 (ret is ttok wrapped in braces)
+      */
+      ret[retind++] = '{';
+      RESIZE_MALLOCED_BUFFER (ret, retind, ttoklen + 2, retsize, 64);
+      strncpy (ret + retind, ttok, ttoklen);
+      free (ttok);
+      retind += ttoklen;
+      ret[retind++] = '}';
+      ret[retind] = '\0';
+      *lenp = retind;
+      return (ret);
+    }
+  else
+    shell_ungetc(peek_char);
+
+  return parse_matched_pair(qc, open, close, lenp, flags|P_FIRSTCLOSE|P_DOLBRACE);
 }
 
 /* Recursively call the parser to parse a $(...) command substitution. This is
@@ -4546,6 +4615,36 @@ parse_arith_cmd (ep, adddq)
   return rval;
 }
 #endif /* DPAREN_ARITHMETIC || ARITH_FOR_COMMAND */
+
+static int
+parse_float_exp ()
+{
+  char *ttok;
+  int ttoklen, c;
+  WORD_DESC *wd;
+
+  ttok = parse_matched_pair (0, '{', '}', &ttoklen, P_FLOAT);
+
+  if (ttok == &matched_pair_error)
+    return -1;
+
+  /* ensure that next character is '}' */
+  c = shell_getc (0);
+  if MBTEST(c != '}')
+    {
+      parser_error (line_number, _("expected `}}' to close {{...}} construct"));
+      FREE (ttok);
+      return -1;
+    }
+
+  /* remove closing '}' */
+  ttok[--ttoklen] = '\0';
+
+  /* set yylval.word */
+  yylval.word = alloc_word_desc ();
+  yylval.word->word = ttok;
+  return FLOAT_CMD;
+}
 
 #if defined (COND_COMMAND)
 static void
@@ -5012,7 +5111,7 @@ read_token_word (character)
 		((peek_char == '{' || peek_char == '[') && character == '$'))	/* ) ] } */
 	    {
 	      if (peek_char == '{')		/* } */
-		ttok = parse_matched_pair (cd, '{', '}', &ttoklen, P_FIRSTCLOSE|P_DOLBRACE);
+		ttok = parse_dolbrace (cd, '{', '}', &ttoklen, 0);
 	      else if (peek_char == '(')		/* ) */
 		{
 		  /* XXX - push and pop the `(' as a delimiter for use by

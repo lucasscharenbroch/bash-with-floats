@@ -178,6 +178,16 @@ dispose_command (command)
       }
 #endif /* DPAREN_ARITHMETIC */
 
+    case cm_float:
+      {
+	register FLOAT_COM *c;
+
+	c = command->value.Float;
+	dispose_word_desc(c->exp);
+	free(c);
+	break;
+      }
+
 #if defined (COND_COMMAND)
     case cm_cond:
       {

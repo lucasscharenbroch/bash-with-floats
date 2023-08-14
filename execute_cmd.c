@@ -143,6 +143,7 @@ static int execute_select_command PARAMS((SELECT_COM *));
 #if defined (DPAREN_ARITHMETIC)
 static int execute_arith_command PARAMS((ARITH_COM *));
 #endif
+static int execute_float_command PARAMS((FLOAT_COM *));
 #if defined (COND_COMMAND)
 static int execute_cond_node PARAMS((COND_COM *));
 static int execute_cond_command PARAMS((COND_COM *));
@@ -383,6 +384,8 @@ executing_line_number ()
       if (currently_executing_command->type == cm_arith_for)
 	return currently_executing_command->value.ArithFor->line;
 #endif
+      if (currently_executing_command->type == cm_float)
+	return currently_executing_command->value.Float->line;
 
       return line_number;
     }
@@ -442,6 +445,7 @@ shell_control_structure (type)
 #if defined (DPAREN_ARITHMETIC)
     case cm_arith:
 #endif
+    case cm_float:
 #if defined (COND_COMMAND)
     case cm_cond:
 #endif
@@ -1047,6 +1051,7 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
 #if defined (DPAREN_ARITHMETIC)
     case cm_arith:
 #endif
+    case cm_float:
 #if defined (COND_COMMAND)
     case cm_cond:
 #endif
@@ -1056,6 +1061,8 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
       if (ignore_return && command->type == cm_arith)
 	command->value.Arith->flags |= CMD_IGNORE_RETURN;
 #endif
+      if (ignore_return && command->type == cm_float)
+	command->value.Float->flags |= CMD_IGNORE_RETURN;
 #if defined (COND_COMMAND)
       if (ignore_return && command->type == cm_cond)
 	command->value.Cond->flags |= CMD_IGNORE_RETURN;
@@ -1067,6 +1074,8 @@ execute_command_internal (command, asynchronous, pipe_in, pipe_out,
 	exec_result = execute_arith_command (command->value.Arith);
       else
 #endif
+      if (command->type == cm_float)
+	exec_result = execute_float_command (command->value.Float);
 #if defined (COND_COMMAND)
       if (command->type == cm_cond)
 	exec_result = execute_cond_command (command->value.Cond);
@@ -3861,6 +3870,77 @@ execute_arith_command (arith_command)
   return (expresult == 0 ? EXECUTION_FAILURE : EXECUTION_SUCCESS);
 }
 #endif /* DPAREN_ARITHMETIC */
+
+static int
+execute_float_command (float_command)
+     FLOAT_COM *float_command;
+{
+  int debug_trap_ret, save_line_number, expok, eflag;
+  char *expanded_expr;
+  double expresult;
+
+  this_command_name = "{{";
+  SET_LINE_NUMBER (float_command->line);
+
+  if (variable_context && interactive_shell && sourcelevel == 0)
+    {
+      /* line numbers in a function start at 1 */
+      line_number -= function_line_number - 1;
+      if (line_number <= 0)
+        line_number = 1;
+    }
+
+  command_string_index = 0;
+  print_float_command (float_command->exp);
+
+  save_line_number = line_number;
+  if (signal_in_progress (DEBUG_TRAP) == 0 && running_trap == 0)
+    {
+      FREE (the_printed_command_except_trap);
+      the_printed_command_except_trap = savestring (the_printed_command);
+    }
+
+  /* Run the debug trap before each float command, but do it after we
+     update the line number information and before we expand the expression */
+  debug_trap_ret = run_debug_trap ();
+#if defined (DEBUGGER)
+  /* In debugging mode, if the DEBUG trap returns a non-zero status, we
+     skip the command. */
+  if (debugging_mode && debug_trap_ret != EXECUTION_SUCCESS)
+    {
+      line_number = save_line_number;
+      return (EXECUTION_SUCCESS);
+    }
+#endif
+
+  this_command_name = "{{";
+
+  /* TODO
+  expanded_expr = expand_float_string (float_command->exp->word, 0);
+  */
+  expanded_expr = savestring(float_command->exp->word); /* TODO remove */
+
+  if (echo_command_at_execute && expanded_expr)
+    xtrace_print_float_cmd (expanded_expr);
+
+  if (expanded_expr)
+    {
+      eflag = (shell_compatibility_level > 51) ? 0 : EXP_EXPANDED;
+      expresult = fevalexp (expanded_expr, eflag, &expok);
+      line_number = save_line_number;
+      free (expanded_expr);
+    }
+  else
+    {
+      expresult = 0.0;
+      expok = 1;
+    }
+
+  if (expok == 0)
+    return (EXECUTION_FAILURE);
+
+  return (expresult == 0.0 ? EXECUTION_FAILURE : EXECUTION_SUCCESS);
+}
 
 #if defined (COND_COMMAND)
 

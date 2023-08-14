@@ -244,6 +244,10 @@ make_command_string_internal (command)
 	  break;
 #endif
 
+    case cm_float:
+      print_float_command (command->value.Float->exp);
+      break;
+
 #if defined (COND_COMMAND)
 	case cm_cond:
 	  print_cond_command (command->value.Cond);
@@ -853,6 +857,13 @@ print_arith_command (arith_cmd_list)
 }
 #endif
 
+void
+print_float_command (exp)
+    WORD_DESC *exp;
+{
+  cprintf ("{{%s}}", exp->word);
+}
+
 #if defined (COND_COMMAND)
 static void
 print_cond_node (cond)
@@ -984,6 +995,15 @@ xtrace_print_arith_cmd (list)
   fflush (xtrace_fp);
 }
 #endif
+
+void
+xtrace_print_float_cmd (w)
+  char *w;
+{
+  CHECK_XTRACE_FP;
+  fprintf (xtrace_fp, "%s{{ %s }}\n", indirection_level_string (), w);
+  fflush (xtrace_fp);
+}
 
 void
 print_simple_command (simple_command)

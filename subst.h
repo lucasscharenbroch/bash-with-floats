@@ -191,6 +191,8 @@ extern char *expand_subscript_string PARAMS((char *, int));
 /* Expand an arithmetic expression string */
 extern char *expand_arith_string PARAMS((char *, int));
 
+extern char * expand_float_string PARAMS((char *, int));
+
 /* Expand $'...' and $"..." in a string for code paths that do not. */
 extern char *expand_string_dollar_quote PARAMS((char *, int));
 

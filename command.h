@@ -70,7 +70,7 @@ enum r_instruction {
 /* Command Types: */
 enum command_type { cm_for, cm_case, cm_while, cm_if, cm_simple, cm_select,
 		    cm_connection, cm_function_def, cm_until, cm_group,
-		    cm_arith, cm_cond, cm_arith_for, cm_subshell, cm_coproc };
+		    cm_arith, cm_float, cm_cond, cm_arith_for, cm_subshell, cm_coproc };
 
 /* Possible values for the `flags' field of a WORD_DESC. */
 #define W_HASDOLLAR	(1 << 0)	/* Dollar sign present. */
@@ -222,6 +222,7 @@ typedef struct command {
 #endif
     struct subshell_com *Subshell;
     struct coproc_com *Coproc;
+    struct float_com *Float;
   } value;
 } COMMAND;
 
@@ -315,6 +316,12 @@ typedef struct arith_com {
   WORD_LIST *exp;
 } ARITH_COM;
 #endif /* DPAREN_ARITHMETIC */
+
+typedef struct float_com {
+  int flags;
+  int line;
+  WORD_DESC *exp;
+} FLOAT_COM;
 
 /* The conditional command, [[...]].  This is a binary tree -- we slipped
    a recursive-descent parser into the YACC grammar to parse it. */

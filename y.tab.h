@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.8.2.  */
+/* A Bison parser, made by GNU Bison 3.7.5.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -16,7 +16,7 @@
    GNU General Public License for more details.
 
    You should have received a copy of the GNU General Public License
-   along with this program.  If not, see <https://www.gnu.org/licenses/>.  */
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 /* As a special exception, you may create a larger work that contains
    part or all of the Bison parser skeleton and distribute that work
@@ -80,28 +80,29 @@ extern int yydebug;
     WORD = 281,                    /* WORD  */
     ASSIGNMENT_WORD = 282,         /* ASSIGNMENT_WORD  */
     REDIR_WORD = 283,              /* REDIR_WORD  */
-    NUMBER = 284,                  /* NUMBER  */
-    ARITH_CMD = 285,               /* ARITH_CMD  */
-    ARITH_FOR_EXPRS = 286,         /* ARITH_FOR_EXPRS  */
-    COND_CMD = 287,                /* COND_CMD  */
-    AND_AND = 288,                 /* AND_AND  */
-    OR_OR = 289,                   /* OR_OR  */
-    GREATER_GREATER = 290,         /* GREATER_GREATER  */
-    LESS_LESS = 291,               /* LESS_LESS  */
-    LESS_AND = 292,                /* LESS_AND  */
-    LESS_LESS_LESS = 293,          /* LESS_LESS_LESS  */
-    GREATER_AND = 294,             /* GREATER_AND  */
-    SEMI_SEMI = 295,               /* SEMI_SEMI  */
-    SEMI_AND = 296,                /* SEMI_AND  */
-    SEMI_SEMI_AND = 297,           /* SEMI_SEMI_AND  */
-    LESS_LESS_MINUS = 298,         /* LESS_LESS_MINUS  */
-    AND_GREATER = 299,             /* AND_GREATER  */
-    AND_GREATER_GREATER = 300,     /* AND_GREATER_GREATER  */
-    LESS_GREATER = 301,            /* LESS_GREATER  */
-    GREATER_BAR = 302,             /* GREATER_BAR  */
-    BAR_AND = 303,                 /* BAR_AND  */
-    DOLPAREN = 304,                /* DOLPAREN  */
-    yacc_EOF = 305                 /* yacc_EOF  */
+    FLOAT_CMD = 284,               /* FLOAT_CMD  */
+    NUMBER = 285,                  /* NUMBER  */
+    ARITH_CMD = 286,               /* ARITH_CMD  */
+    ARITH_FOR_EXPRS = 287,         /* ARITH_FOR_EXPRS  */
+    COND_CMD = 288,                /* COND_CMD  */
+    AND_AND = 289,                 /* AND_AND  */
+    OR_OR = 290,                   /* OR_OR  */
+    GREATER_GREATER = 291,         /* GREATER_GREATER  */
+    LESS_LESS = 292,               /* LESS_LESS  */
+    LESS_AND = 293,                /* LESS_AND  */
+    LESS_LESS_LESS = 294,          /* LESS_LESS_LESS  */
+    GREATER_AND = 295,             /* GREATER_AND  */
+    SEMI_SEMI = 296,               /* SEMI_SEMI  */
+    SEMI_AND = 297,                /* SEMI_AND  */
+    SEMI_SEMI_AND = 298,           /* SEMI_SEMI_AND  */
+    LESS_LESS_MINUS = 299,         /* LESS_LESS_MINUS  */
+    AND_GREATER = 300,             /* AND_GREATER  */
+    AND_GREATER_GREATER = 301,     /* AND_GREATER_GREATER  */
+    LESS_GREATER = 302,            /* LESS_GREATER  */
+    GREATER_BAR = 303,             /* GREATER_BAR  */
+    BAR_AND = 304,                 /* BAR_AND  */
+    DOLPAREN = 305,                /* DOLPAREN  */
+    yacc_EOF = 306                 /* yacc_EOF  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -136,34 +137,35 @@ extern int yydebug;
 #define WORD 281
 #define ASSIGNMENT_WORD 282
 #define REDIR_WORD 283
-#define NUMBER 284
-#define ARITH_CMD 285
-#define ARITH_FOR_EXPRS 286
-#define COND_CMD 287
-#define AND_AND 288
-#define OR_OR 289
-#define GREATER_GREATER 290
-#define LESS_LESS 291
-#define LESS_AND 292
-#define LESS_LESS_LESS 293
-#define GREATER_AND 294
-#define SEMI_SEMI 295
-#define SEMI_AND 296
-#define SEMI_SEMI_AND 297
-#define LESS_LESS_MINUS 298
-#define AND_GREATER 299
-#define AND_GREATER_GREATER 300
-#define LESS_GREATER 301
-#define GREATER_BAR 302
-#define BAR_AND 303
-#define DOLPAREN 304
-#define yacc_EOF 305
+#define FLOAT_CMD 284
+#define NUMBER 285
+#define ARITH_CMD 286
+#define ARITH_FOR_EXPRS 287
+#define COND_CMD 288
+#define AND_AND 289
+#define OR_OR 290
+#define GREATER_GREATER 291
+#define LESS_LESS 292
+#define LESS_AND 293
+#define LESS_LESS_LESS 294
+#define GREATER_AND 295
+#define SEMI_SEMI 296
+#define SEMI_AND 297
+#define SEMI_SEMI_AND 298
+#define LESS_LESS_MINUS 299
+#define AND_GREATER 300
+#define AND_GREATER_GREATER 301
+#define LESS_GREATER 302
+#define GREATER_BAR 303
+#define BAR_AND 304
+#define DOLPAREN 305
+#define yacc_EOF 306
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 338 "/usr/local/src/chet/src/bash/src/parse.y"
+#line 340 "./parse.y"
 
   WORD_DESC *word;		/* the word that we read. */
   int number;			/* the number that we read. */
@@ -173,7 +175,7 @@ union YYSTYPE
   ELEMENT element;
   PATTERN_LIST *pattern;
 
-#line 177 "y.tab.h"
+#line 179 "y.tab.h"
 
 };
 typedef union YYSTYPE YYSTYPE;
@@ -184,8 +186,6 @@ typedef union YYSTYPE YYSTYPE;
 
 extern YYSTYPE yylval;
 
-
 int yyparse (void);
-
 
 #endif /* !YY_YY_Y_TAB_H_INCLUDED  */

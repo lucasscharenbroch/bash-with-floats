@@ -55,6 +55,8 @@ extern COMMAND *clean_simple_command PARAMS((COMMAND *));
 
 extern COMMAND *make_arith_command PARAMS((WORD_LIST *));
 
+extern COMMAND *make_float_command PARAMS((WORD_DESC *));
+
 extern COMMAND *make_select_command PARAMS((WORD_DESC *, WORD_LIST *, COMMAND *, int));
 
 #if defined (COND_COMMAND)

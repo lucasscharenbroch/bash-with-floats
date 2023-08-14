@@ -47,6 +47,7 @@ static IF_COM *copy_if_command PARAMS((IF_COM *));
 #if defined (DPAREN_ARITHMETIC)
 static ARITH_COM *copy_arith_command PARAMS((ARITH_COM *));
 #endif
+static FLOAT_COM *copy_float_command PARAMS((FLOAT_COM *));
 #if defined (COND_COMMAND)
 static COND_COM *copy_cond_command PARAMS((COND_COM *));
 #endif
@@ -303,6 +304,20 @@ copy_arith_command (com)
 }
 #endif
 
+static FLOAT_COM *
+copy_float_command (com)
+    FLOAT_COM *com;
+{
+  FLOAT_COM *new_float;
+
+  new_float = (FLOAT_COM *)xmalloc (sizeof (FLOAT_COM));
+  new_float->flags = com->flags;
+  new_float->exp = copy_word (com->exp);
+  new_float->line = com->line;
+
+  return (new_float);
+}
+
 #if defined (COND_COMMAND)
 static COND_COM *
 copy_cond_command (com)
@@ -428,6 +443,10 @@ copy_command (command)
 	new_command->value.Arith = copy_arith_command (command->value.Arith);
 	break;
 #endif
+
+      case cm_float:
+	new_command->value.Float = copy_float_command (command->value.Float);
+	break;
 
 #if defined (COND_COMMAND)
       case cm_cond:
