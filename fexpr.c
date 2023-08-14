@@ -117,9 +117,8 @@ static procenv_t evalbuf;
 /* ... TODO ... */
 
 double
-fevalexp(expr, flags, validp)
+fevalexp(expr, validp)
      char *expr;
-     int flags;
      int *validp;
 {
   /* TODO placeholder: return pi for now */

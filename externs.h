@@ -31,7 +31,7 @@
 
 extern intmax_t evalexp PARAMS((char *, int, int *));
 
-extern double fevalexp PARAMS((char *, int, int *));
+extern double fevalexp PARAMS((char *, int *));
 
 /* Functions from print_cmd.c. */
 #define FUNC_MULTILINE	0x01

@@ -1292,6 +1292,38 @@ extract_command_subst (string, sindex, xflags)
     }
 }
 
+/* Extracts a ${{...}} construct.
+   STRING: "......${{xxx}}......"
+   SINDEX (initial): ^
+   SINDEX (return)        ^
+   RETURN: "xxx"
+ */
+char *
+extract_float_subst (string, sindex, flags)
+     char *string;
+     int *sindex;
+     int flags;
+{
+  char *ret = extract_delimited_string (string, sindex, "${", "{", "}", flags);
+  if (!ret || string[*sindex] != '}' || string[(*sindex) + 1] != '}')
+    {
+      if (no_longjmp_on_fatal_error == 0)
+	{
+	  last_command_exit_value = EXECUTION_FAILURE;
+	  report_error (_("bad substitution: invalid closer for `{{'"));
+	  exp_jump_to_top_level (DISCARD);
+	}
+      else
+	{
+	  *sindex += 2;
+	  return (char *)NULL;
+	}
+    }
+
+  *sindex += 2;
+  return ret;
+}
+
 /* Extract the $[ construct in STRING, and return a new string. (])
    Start extracting at (SINDEX) as if we had just seen "$[".
    Make (SINDEX) get the position of the matching "]". */
@@ -3823,6 +3855,8 @@ pos_params (string, start, end, quoted, pflags)
    bother checking for it. */
 #define ARITH_EXP_CHAR(s) (s == '$' || s == '`' || s == CTLESC || s == '~')
 
+#define FLOAT_EXP_CHAR(s) (s == '$' || s == '`' || s == CTLESC)
+
 /* If there are any characters in STRING that require full expansion,
    then call FUNC to expand STRING; otherwise just perform quote
    removal if necessary.  This returns a new string. */
@@ -4085,9 +4119,57 @@ expand_float_string (string, quoted)
      char *string;
      int quoted;
 {
+  WORD_DESC td;
+  WORD_LIST *list, *tlist;
+  size_t slen;
+  int i, saw_quote;
+  char *ret;
+  DECLARE_MBSTATE;
 
-  return (char *)NULL; /* TODO */
+  /* Don't need string length for ADVANCE_CHAR unless multibyte chars possible. */
+  slen = (MB_CUR_MAX > 1) ? strlen (string) : 0;
+  i = saw_quote = 0;
+  while (string[i])
+    {
+      if (FLOAT_EXP_CHAR (string[i]))
+	break;
+      else if (string[i] == '\'' || string[i] == '\\' || string[i] == '"')
+	saw_quote = string[i];
+      ADVANCE_CHAR (string, slen, i);
+    }
 
+  if (string[i])
+    {
+      td.flags = W_NOPROCSUB|W_NOTILDE;
+      td.word = savestring (string);
+      list = call_expand_word_internal (&td, quoted, 0, (int *)NULL, (int *)NULL);
+
+      if (list)
+	{
+	  tlist = word_list_split (list);
+	  dispose_words (list);
+	  list = tlist;
+	  if (list)
+	    dequote_list (list);
+	}
+
+      if (list)
+	{
+	  ret = string_list (list);
+	  dispose_words (list);
+	}
+      else
+	ret = (char *)NULL;
+      FREE (td.word);
+    }
+  else if (saw_quote && (quoted & Q_FLOAT))
+    ret = string_quote_removal (string, quoted);
+  else if (saw_quote && ((quoted & (Q_HERE_DOCUMENT|Q_DOUBLE_QUOTES)) == 0))
+    ret = string_quote_removal (string, quoted);
+  else
+    ret = savestring (string);
+
+  return ret;
 }
 
 #if defined (COND_COMMAND)
@@ -10245,6 +10327,7 @@ param_expand (string, sindex, quoted, expanded_something,
   int zindex, t_index, expok, eflag;
   unsigned char c;
   intmax_t number;
+  double float_number;
   SHELL_VAR *var;
   WORD_LIST *list, *l;
   WORD_DESC *tdesc, *ret;
@@ -10545,6 +10628,41 @@ param_expand (string, sindex, quoted, expanded_something,
       break;
 
     case LBRACE:
+      if (string[zindex + 1] == LBRACE) /* ${{ */
+	{
+	  zindex += 2;
+	  temp = extract_float_subst (string, &zindex, (pflags&PF_COMPLETE) ? SX_COMPLETE : 0);
+	  if (!temp)
+	    return (&expand_wdesc_error);
+
+	  temp1 = expand_float_string (temp, Q_DOUBLE_QUOTES|Q_FLOAT);
+	  free (temp);
+	  if (!temp1)
+	    return (&expand_wdesc_error);
+
+	  savecmd = this_command_name;
+	  this_command_name = (char *)NULL;
+
+	  float_number = fevalexp (temp1, &expok);
+	  free (temp1);
+	  this_command_name = savecmd;
+	  if (expok == 0)
+	    {
+	      if (interactive_shell == 0 && posixly_correct)
+		{
+		  set_exit_status (EXECUTION_FAILURE);
+		  return (&expand_wdesc_fatal);
+		}
+	      else
+		return (&expand_wdesc_error);
+	    }
+
+	  FLOAT_TO_STRING (float_number, temp, 64);
+	  goto return0;
+	}
+
+      /* otherwise expand ${} */
+
       tdesc = parameter_brace_expand (string, &zindex, quoted, pflags,
 				      quoted_dollar_at_p,
 				      contains_dollar_at);

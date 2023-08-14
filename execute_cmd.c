@@ -3915,18 +3915,14 @@ execute_float_command (float_command)
 
   this_command_name = "{{";
 
-  /* TODO
-  expanded_expr = expand_float_string (float_command->exp->word, 0);
-  */
-  expanded_expr = savestring(float_command->exp->word); /* TODO remove */
+  expanded_expr = expand_float_string (float_command->exp->word, Q_DOUBLE_QUOTES|Q_FLOAT);
 
   if (echo_command_at_execute && expanded_expr)
     xtrace_print_float_cmd (expanded_expr);
 
   if (expanded_expr)
     {
-      eflag = (shell_compatibility_level > 51) ? 0 : EXP_EXPANDED;
-      expresult = fevalexp (expanded_expr, eflag, &expok);
+      expresult = fevalexp (expanded_expr, &expok);
       line_number = save_line_number;
       free (expanded_expr);
     }

@@ -42,6 +42,7 @@
 #define Q_DOLBRACE	 0x080
 #define Q_ARITH		 0x100	/* expanding string for arithmetic evaluation */
 #define Q_ARRAYSUB	 0x200	/* expanding indexed array subscript */
+#define Q_FLOAT		 0x400	/* expanding string for a floating point evaluation */
 
 /* Flag values controlling how assignment statements are treated. */
 #define ASS_APPEND	0x0001
@@ -191,7 +192,7 @@ extern char *expand_subscript_string PARAMS((char *, int));
 /* Expand an arithmetic expression string */
 extern char *expand_arith_string PARAMS((char *, int));
 
-extern char * expand_float_string PARAMS((char *, int));
+extern char *expand_float_string PARAMS((char *, int));
 
 /* Expand $'...' and $"..." in a string for code paths that do not. */
 extern char *expand_string_dollar_quote PARAMS((char *, int));

@@ -190,6 +190,14 @@ typedef struct {
       } \
   } while (0)
 
+/* Convert a floating-point variable to a string */
+#define FLOAT_TO_STRING(num, dest, maxsize) \
+  do { \
+    dest = (char *)xmalloc (maxsize + 1); \
+    int _dest_size = snprintf(dest, maxsize, "%f", num); \
+    dest[_dest_size] = '\0'; \
+  } while (0)
+
 /* Function pointers can be declared as (Function *)foo. */
 #if !defined (_FUNCTION_DEF)
 #  define _FUNCTION_DEF
