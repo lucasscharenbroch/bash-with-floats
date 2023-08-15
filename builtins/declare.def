@@ -22,7 +22,7 @@ $PRODUCES declare.c
 
 $BUILTIN declare
 $FUNCTION declare_builtin
-$SHORT_DOC declare [-aAfFgiIlnrtux] [name[=value] ...] or declare -p [-aAfFilnrtux] [name ...]
+$SHORT_DOC declare [-aAfFgiIlnrtux] [name[=value] ...] or declare -p [-aAfFilnrtuxd] [name ...]
 Set variable values and attributes.
 
 Declare variables and give them attributes.  If no NAMEs are given,
@@ -48,6 +48,7 @@ Options which set attributes:
   -t	to make NAMEs have the `trace' attribute
   -u	to convert the value of each NAME to upper case on assignment
   -x	to make NAMEs export
+  -d	to make NAMEs have the `floating point' attribute
 
 Using `+' instead of `-' turns off the given attribute.
 
@@ -140,9 +141,9 @@ local_builtin (list)
 }
 
 #if defined (ARRAY_VARS)
-#  define DECLARE_OPTS	"+acfgilnprtuxAFGI"
+#  define DECLARE_OPTS	"+acfgilnprtuxdAFGI"
 #else
-#  define DECLARE_OPTS	"+cfgilnprtuxFGI"
+#  define DECLARE_OPTS	"+cfgilnprtuxdFGI"
 #endif
 
 static SHELL_VAR *
@@ -289,6 +290,9 @@ declare_internal (list, local_var)
 	case 'i':
 	  *flags |= att_integer;
 	  break;
+	case 'd':
+	  *flags |= att_float;
+	  break;
 	case 'n':
 	  *flags |= att_nameref;
 	  break;
@@ -335,7 +339,7 @@ declare_internal (list, local_var)
 
   /* If there are no more arguments left, then we just want to show
      some variables. */
-  if (list == 0)	/* declare -[aAfFilnrtux] */
+  if (list == 0)	/* declare -[aAfFilnrtuxd] */
     {
       /* Show local variables defined at this context level if this is
 	 the `local' builtin. */
@@ -351,7 +355,7 @@ declare_internal (list, local_var)
       return (sh_chkwrite (EXECUTION_SUCCESS));
     }
 
-  if (pflag)	/* declare -p [-aAfFilnrtux] [name ...] */
+  if (pflag)	/* declare -p [-aAfFilnrtuxd] [name ...] */
     {
       for (any_failed = 0; list; list = list->next)
 	{
@@ -371,7 +375,7 @@ declare_internal (list, local_var)
     }
 
   /* Some option combinations that don't make any sense */
-  if ((flags_on & att_function) && (flags_on & (att_array|att_assoc|att_integer|att_nameref)))
+  if ((flags_on & att_function) && (flags_on & (att_array|att_assoc|att_integer|att_float|att_nameref)))
     {
       char *optchar;
 
@@ -379,6 +383,8 @@ declare_internal (list, local_var)
 	optchar = "-n";
       else if (flags_on & att_integer)
 	optchar = "-i";
+      else if (flags_on & att_float)
+	optchar = "-d";
       else if (flags_on & att_assoc)
 	optchar = "-A";
       else if (flags_on & att_array)
@@ -391,7 +397,7 @@ declare_internal (list, local_var)
 #define NEXT_VARIABLE() free (name); list = list->next; continue
 
   /* There are arguments left, so we are making variables. */
-  while (list)		/* declare [-aAfFilnrtux] name[=value] [name[=value] ...] */
+  while (list)		/* declare [-aAfFilnrtuxd] name[=value] [name[=value] ...] */
     {
       char *value, *name, *newname;
       int offset, aflags, wflags, created_var;
@@ -498,7 +504,7 @@ declare_internal (list, local_var)
 	  NEXT_VARIABLE ();
 	}
 
-      if (offset)	/* declare [-aAfFirx] name=value */
+      if (offset)	/* declare [-aAfFirxd] name=value */
 	{
 	  name[offset] = '\0';
 	  value = name + offset + 1;
@@ -910,9 +916,9 @@ restart_new_var_name:
 	var = convert_var_to_array (var);
 #endif /* ARRAY_VARS */
 
-      /* ksh93 compat: turning on nameref attribute turns off -ilu */
+      /* ksh93 compat: turning on nameref attribute turns off -ilud */
       if (flags_on & att_nameref)
-	VUNSETATTR (var, att_integer|att_uppercase|att_lowercase|att_capcase);
+	VUNSETATTR (var, att_integer|att_uppercase|att_lowercase|att_capcase|att_float);
 
       /* XXX - we note that we are turning on nameref attribute and defer
 	 setting it until the assignment has been made so we don't do an

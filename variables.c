@@ -2975,6 +2975,39 @@ make_variable_value (var, value, flags)
 	rval += lval;
       retval = itos (rval);
     }
+  else if ((flags & ASS_NOEVAL) == 0 && float_p (var))
+    {
+      double flval, frval;
+      if (flags & ASS_APPEND)
+	{
+	  oval = value_cell (var);
+	  flval = fevalexp (oval, &expok);
+	  if (expok == 0)
+	    {
+	      if (flags & ASS_NOLONGJMP)
+		goto make_value;
+	      else
+		{
+		  top_level_cleanup ();
+		  jump_to_top_level (DISCARD);
+		}
+	    }
+	}
+      frval = fevalexp (value, &expok);
+      if (expok == 0)
+	{
+	  if (flags & ASS_NOLONGJMP)
+	    goto make_value;
+	  else
+	    {
+	      top_level_cleanup ();
+	      jump_to_top_level (DISCARD);
+	    }
+	}
+      if (flags & ASS_APPEND)
+	frval += flval;
+      FLOAT_TO_STRING (frval, retval);
+    }
 #if defined (CASEMOD_ATTRS)
   else if ((flags & ASS_NOEVAL) == 0 && (capcase_p (var) || uppercase_p (var) || lowercase_p (var)))
     {
@@ -3044,7 +3077,7 @@ can_optimize_assignment (entry, value, aflags)
   if (array_p (entry) || assoc_p (entry))
     return 0;
 #endif
-  if (integer_p (entry) || uppercase_p (entry) || lowercase_p (entry) || capcase_p (entry))
+  if (integer_p (entry) || float_p (entry) || uppercase_p (entry) || lowercase_p (entry) || capcase_p (entry))
     return 0;
   if (readonly_p (entry) || noassign_p (entry))
     return 0;
@@ -3498,13 +3531,10 @@ bind_float_variable (lhs, rhs, flags)
      char *lhs, *rhs;
      int flags;
 {
-
-  /* TODO add support for float variable type */
-
   register SHELL_VAR *v;
-  int /* isfloat, */ isarr, implicitarray, vflags, avflags;
+  int isarr, implicitarray, vflags, avflags;
 
-  /* isfloat = */ isarr = implicitarray = 0;
+  isarr = implicitarray = 0;
 #if defined (ARRAY_VARS)
   /* Don't rely on VA_NOEXPAND being 1, set it explicitly */
   vflags = (flags & ASS_NOEXPAND) ? VA_NOEXPAND : 0;
@@ -3530,19 +3560,13 @@ bind_float_variable (lhs, rhs, flags)
 #endif
     v = find_variable (lhs);
 
+#if defined (ARRAY_VARS)
   if (v)
     {
-      /* TODO temporarily unset float status to avoid infinite recursion
-      isint = integer_p (v);
-      VUNSETATTR (v, att_integer);
-      */
-#if defined (ARRAY_VARS)
       if (array_p (v) && isarr == 0)
 	implicitarray = 1;
-#endif
     }
 
-#if defined (ARRAY_VARS)
   if (isarr)
     v = assign_array_element (lhs, rhs, flags, (array_eltstate_t *)0);
   else if (implicitarray)
@@ -3551,17 +3575,8 @@ bind_float_variable (lhs, rhs, flags)
 #endif
     v = bind_variable (lhs, rhs, 0);	/* why not use bind_variable_value? */
 
-  /* TODO restore float status
-  if (v)
-    {
-      if (isint)
-	VSETATTR (v, att_integer);
-      VUNSETATTR (v, att_invisible);
-    }
-  */
-
   if (v && nameref_p (v))
-    internal_warning (_("%s: assigning integer to name reference"), lhs);
+    internal_warning (_("%s: assigning float to name reference"), lhs);
      
   return (v);
 }

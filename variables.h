@@ -113,10 +113,11 @@ typedef struct _vlist {
 #define att_lowercase	0x0000200	/* word converted to lowercase on assignment */
 #define att_capcase	0x0000400	/* word capitalized on assignment */
 #define att_nameref	0x0000800	/* word is a name reference */
+#define att_float	0x1000000	/* variable represents a floating-point number */
 
 #define user_attrs	(att_exported|att_readonly|att_integer|att_local|att_trace|att_uppercase|att_lowercase|att_capcase|att_nameref)
 
-#define attmask_user	0x0000fff
+#define attmask_user	0x1000fff
 
 /* Internal attributes used for bookkeeping */
 #define att_invisible	0x0001000	/* cannot see */
@@ -147,6 +148,7 @@ typedef struct _vlist {
 #define lowercase_p(var)	((((var)->attributes) & (att_lowercase)))
 #define capcase_p(var)		((((var)->attributes) & (att_capcase)))
 #define nameref_p(var)		((((var)->attributes) & (att_nameref)))
+#define float_p(var)		((((var)->attributes) & (att_float)))
 
 #define invisible_p(var)	((((var)->attributes) & (att_invisible)))
 #define non_unsettable_p(var)	((((var)->attributes) & (att_nounset)))

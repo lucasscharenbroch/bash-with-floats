@@ -430,6 +430,9 @@ var_attribute_string (var, pattr, flags)
       if (integer_p (var))
 	flags[i++] = 'i';
 
+      if (float_p (var))
+	flags[i++] = 'd';
+
       if (nameref_p (var))
 	flags[i++] = 'n';
 
