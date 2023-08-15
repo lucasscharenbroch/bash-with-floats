@@ -306,6 +306,8 @@ extern char *remove_backslashes PARAMS((char *));
 extern char *cond_expand_word PARAMS((WORD_DESC *, int));
 #endif
 
+extern int expanding_float_expr;
+
 /* Flags for skip_to_delim */
 #define SD_NOJMP	0x001	/* don't longjmp on fatal error. */
 #define SD_INVERT	0x002	/* look for chars NOT in passed set */

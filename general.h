@@ -191,10 +191,12 @@ typedef struct {
   } while (0)
 
 /* Convert a floating-point variable to a string */
-#define FLOAT_TO_STRING(num, dest, maxsize) \
+#define FLOAT_TO_STRING(num, dest) \
   do { \
-    dest = (char *)xmalloc (maxsize + 1); \
-    int _dest_size = snprintf(dest, maxsize, "%f", num); \
+    int _precision = expanding_float_expr ? 15 : evalexp("FLOAT_DIGITS", 0, 0); \
+    int _dest_size = snprintf (dest, 0, "%.*f", _precision, num) + 1; \
+    dest = (char *)xmalloc (_dest_size + 1); \
+    snprintf (dest, _dest_size, "%.*f", _precision, num); \
     dest[_dest_size] = '\0'; \
   } while (0)
 

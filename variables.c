@@ -707,6 +707,9 @@ initialize_shell_variables (env, privmode)
   /* Allow FUNCNEST to be inherited from the environment. */
   sv_funcnest ("FUNCNEST");
 
+  /* set FLOAT_DIGITS */
+  VSETATTR (bind_variable ("FLOAT_DIGITS", "6", 0), att_integer);
+
   /* Initialize the dynamic variables, and seed their values. */
   initialize_dynamic_variables ();
 }
@@ -3491,6 +3494,79 @@ bind_int_variable (lhs, rhs, flags)
 }
 
 SHELL_VAR *
+bind_float_variable (lhs, rhs, flags)
+     char *lhs, *rhs;
+     int flags;
+{
+
+  /* TODO add support for float variable type */
+
+  register SHELL_VAR *v;
+  int /* isfloat, */ isarr, implicitarray, vflags, avflags;
+
+  /* isfloat = */ isarr = implicitarray = 0;
+#if defined (ARRAY_VARS)
+  /* Don't rely on VA_NOEXPAND being 1, set it explicitly */
+  vflags = (flags & ASS_NOEXPAND) ? VA_NOEXPAND : 0;
+  if (flags & ASS_ONEWORD)
+    vflags |= VA_ONEWORD;
+  if (valid_array_reference (lhs, vflags))
+    {
+      isarr = 1;
+      avflags = 0;
+      /* Common code to translate between assignment and reference flags. */
+      if (flags & ASS_NOEXPAND)
+	avflags |= AV_NOEXPAND;
+      if (flags & ASS_ONEWORD)
+	avflags |= AV_ONEWORD;
+      v = array_variable_part (lhs, avflags, (char **)0, (int *)0);
+    }
+  else if (legal_identifier (lhs) == 0)
+    {
+      sh_invalidid (lhs);
+      return ((SHELL_VAR *)NULL);      
+    }
+  else
+#endif
+    v = find_variable (lhs);
+
+  if (v)
+    {
+      /* TODO temporarily unset float status to avoid infinite recursion
+      isint = integer_p (v);
+      VUNSETATTR (v, att_integer);
+      */
+#if defined (ARRAY_VARS)
+      if (array_p (v) && isarr == 0)
+	implicitarray = 1;
+#endif
+    }
+
+#if defined (ARRAY_VARS)
+  if (isarr)
+    v = assign_array_element (lhs, rhs, flags, (array_eltstate_t *)0);
+  else if (implicitarray)
+    v = bind_array_variable (lhs, 0, rhs, 0);
+  else
+#endif
+    v = bind_variable (lhs, rhs, 0);	/* why not use bind_variable_value? */
+
+  /* TODO restore float status
+  if (v)
+    {
+      if (isint)
+	VSETATTR (v, att_integer);
+      VUNSETATTR (v, att_invisible);
+    }
+  */
+
+  if (v && nameref_p (v))
+    internal_warning (_("%s: assigning integer to name reference"), lhs);
+     
+  return (v);
+}
+
+SHELL_VAR *
 bind_var_to_int (var, val, flags)
      char *var;
      intmax_t val;
@@ -3500,6 +3576,17 @@ bind_var_to_int (var, val, flags)
 
   p = fmtulong (val, 10, ibuf, sizeof (ibuf), 0);
   return (bind_int_variable (var, p, flags));
+}
+
+SHELL_VAR *
+bind_var_to_float (var, val, flags)
+     char *var;
+     double val;
+     int flags;
+{
+  char *s;
+  FLOAT_TO_STRING (val, s);
+  return (bind_float_variable (var, s, flags));
 }
 
 /* Do a function binding to a variable.  You pass the name and

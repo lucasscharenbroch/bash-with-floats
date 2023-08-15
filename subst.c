@@ -373,6 +373,8 @@ static WORD_LIST *expand_word_list_internal PARAMS((WORD_LIST *, int));
 
 static int do_assignment_statements PARAMS((WORD_LIST *, char *, int));
 
+int expanding_float_expr = 0;
+
 /* **************************************************************** */
 /*								    */
 /*			Utility Functions			    */
@@ -4126,6 +4128,8 @@ expand_float_string (string, quoted)
   char *ret;
   DECLARE_MBSTATE;
 
+  expanding_float_expr++;
+
   /* Don't need string length for ADVANCE_CHAR unless multibyte chars possible. */
   slen = (MB_CUR_MAX > 1) ? strlen (string) : 0;
   i = saw_quote = 0;
@@ -4169,6 +4173,7 @@ expand_float_string (string, quoted)
   else
     ret = savestring (string);
 
+  expanding_float_expr--;
   return ret;
 }
 
@@ -10657,7 +10662,7 @@ param_expand (string, sindex, quoted, expanded_something,
 		return (&expand_wdesc_error);
 	    }
 
-	  FLOAT_TO_STRING (float_number, temp, 64);
+	  FLOAT_TO_STRING (float_number, temp);
 	  goto return0;
 	}
 
